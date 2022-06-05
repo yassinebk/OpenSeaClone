@@ -1,5 +1,9 @@
+import { useAddress, useMetamask } from "@thirdweb-dev/react";
+import { useEffect } from "react";
 import Header from "../components/Header";
 import Hero from "../components/Hero";
+import { client } from "../lib/sanityClient.js";
+import toast, { Toaster } from "react-hot-toast";
 
 const style = {
   wrapper: ``,
@@ -9,10 +13,55 @@ const style = {
 };
 
 export default function Home() {
+  const address = useAddress();
+  const connectWithMetaMask = useMetamask();
+
+  const welcomeUser = (userName, toastHandler = toast) => {
+    toastHandler.success(
+      `Welcome Back ${userName !== "Unnamed" ? `${userName}` : ""} !`,
+      {
+        style: {
+          backgroundColor: `#04111d`,
+          color: "white",
+        },
+      }
+    );
+  };
+
+  const createUser = async (address) => {
+    const userDoc = {
+      _type: "users",
+      _id: address,
+      userName: "Unnamed",
+      walletAddress: address,
+    };
+    const result = await client.createIfNotExists(userDoc);
+    welcomeUser(result.userName);
+  };
+
+  console.log("address", address);
+  useEffect(() => {
+    if (!address) return;
+    else createUser(address);
+  }, [address]);
   return (
-    <>
-      <Header />
-      <Hero />
-    </>
+    <div className={style.wrapper}>
+      <Toaster position="top-center" reverseOrder={false}/>
+      {address ? (
+        <>
+          <Header />
+          <Hero />
+        </>
+      ) : (
+        <>
+          <button className={style.button} onClick={connectWithMetaMask}>
+            Connect Wallet
+          </button>
+          <div className={style.details}>
+            You need MetaMask or similir wallet extension to run this app.
+          </div>
+        </>
+      )}
+    </div>
   );
 }
